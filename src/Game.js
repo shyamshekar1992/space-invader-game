@@ -18,9 +18,9 @@ const PLAYER_WIDTH = 50;
 const PLAYER_HEIGHT = 50;
 const BULLET_SIZE = 5;
 const BULLET_SPEED = 5;
-const ENEMY_WIDTH = 50;
-const ENEMY_HEIGHT = 50;
-const ENEMY_SPEED = 4;
+const ENEMY_WIDTH = 70;
+const ENEMY_HEIGHT = 70;
+const ENEMY_SPEED = 1;
 const ENEMY_BULLET_SIZE = 5;
 const ENEMY_BULLET_SPEED = 3;
 
@@ -59,10 +59,10 @@ const Enemy = ({ x, y, type }) => {
   let enemyImage;
   switch (type) {
     case 1:
-      enemyImage = enemy6;
+      enemyImage = enemy1;
       break;
     case 2:
-      enemyImage = enemy1;
+      enemyImage = enemy2;
       break;
     case 3:
       enemyImage = enemy3;
@@ -129,7 +129,16 @@ const Game = () => {
   const [enemyBullets, setEnemyBullets] = useState([]);
   const [score, setScore] = useState(0);
   const [explosions, setExplosions] = useState([]);
+  const [ammo, setAmmo] = useState([]); // State for ammo
+  const [ammoCount, setAmmoCount] = useState(10);
   const [gameOver, setGameOver] = useState(false);
+
+  const handleAmmoCollection = (ammoIndex) => {
+    // Remove the collected ammo from the screen
+    setAmmo((prevAmmo) => prevAmmo.filter((_, index) => index !== ammoIndex));
+    // Increase the player's bullet count by 5
+    setAmmoCount((prevCount) => prevCount + 5);
+  };
   useEffect(() => {
     const explosionTimeout = setTimeout(() => {
       setExplosions([]);
@@ -175,20 +184,22 @@ const Game = () => {
         }
       }
     };
-
+  
     const handleKeyPress = (e) => {
       if (e.key === " ") {
         e.preventDefault(); // Prevent scrolling when space is pressed
       }
     };
-
+  
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keypress", handleKeyPress);
+  
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keypress", handleKeyPress);
     };
   }, [playerX, playerY, bullets, gameOver]);
+  
 
   useEffect(() => {
     const moveBullets = () => {
@@ -227,7 +238,7 @@ const Game = () => {
       ]);
     };
 
-    const enemyInterval = setInterval(spawnEnemy, 2000); // Spawn enemies every 2 seconds
+    const enemyInterval = setInterval(spawnEnemy, 500); // Spawn enemies every 2 seconds
 
     return () => clearInterval(enemyInterval);
   }, []);
@@ -320,25 +331,13 @@ const Game = () => {
     return () => clearTimeout(explosionTimeout);
   }, [playerX, playerY, bullets, enemies]);
 
-  const restartGame = () => {
-    setPlayerX(CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2);
-    setPlayerY(CANVAS_HEIGHT - PLAYER_HEIGHT - 20);
-    setBullets([]);
-    setEnemies([]);
-    setScore(0);
-    setExplosions([]);
-    setGameOver(false);
-  };
 
   const handleRestart = () => {
-    setPlayerX(CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2);
-    setPlayerY(CANVAS_HEIGHT - PLAYER_HEIGHT - 20);
-    setBullets([]);
-    setEnemies([]);
-    setScore(0);
-    setExplosions([]);
-    setGameOver(false);
+    window.location.reload();
+
   };
+  
+  
   useEffect(() => {
     const moveEnemies = () => {
       setEnemies((prevEnemies) =>
@@ -358,26 +357,33 @@ const Game = () => {
   
   return (
     <div className="App">
-      <div className="game-container">
-        <Player x={playerX} y={playerY} />
-        {bullets.map((bullet, index) => (
-          <Bullet key={index} x={bullet.x} y={bullet.y} />
-        ))}
-        {enemies
-          .filter((enemy) => enemy.y < CANVAS_HEIGHT)
-          .map((enemy, index) => (
-            <Enemy key={index} x={enemy.x} y={enemy.y} type={enemy.type} />
-          ))}
-        {explosions.map((explosion, index) => (
-          <Explosion key={index} x={explosion.x} y={explosion.y} />
-        ))}
-        {gameOver && (
-          <GameOverPopover score={score} onRestart={handleRestart} />
-        )}
+    <div className="game-container">
+      <div className="cloud-background">
       </div>
-      <div className="score">Score: {score}</div>
-      <button onClick={restartGame}>Restart game</button>
+      <Player x={playerX} y={playerY} />
+      {bullets.map((bullet, index) => (
+        <Bullet key={index} x={bullet.x} y={bullet.y} />
+      ))}
+      {enemies
+        .filter((enemy) => enemy.y < CANVAS_HEIGHT)
+        .map((enemy, index) => (
+          <Enemy key={index} x={enemy.x} y={enemy.y} type={enemy.type} />
+        ))}
+      {explosions.map((explosion, index) => (
+        <Explosion key={index} x={explosion.x} y={explosion.y} />
+      ))}
     </div>
+    {gameOver && (
+          <>
+            <GameOverPopover score={score} onRestart={handleRestart} />
+            <div className="game-over-text">Game Over!</div>
+          </>
+        )}
+    <div className="score">Score: {score}</div>
+    <p>Game instructions use arrow keys "left" and "right" to move and press "spacebutton" to shoot! enjoy your game
+    </p>
+    <button onClick={handleRestart}>Restart game</button>
+  </div>
   );
 };
 
