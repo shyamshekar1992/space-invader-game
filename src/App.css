@@ -13,7 +13,7 @@
 .cloud-background {
   position: absolute;
   width: 580px;
-  height: 600px; /* Set the height to be twice the container height to ensure it covers the entire canvas as it moves */
+  height: 900px; /* Set the height to be twice the container height to ensure it covers the entire canvas as it moves */
   animation: moveBackground 5s linear infinite; /* Adjust animation duration as needed */
   background-image: url('./cloud.png'); /* Adjust the path to your cloud background image */
   background-size: cover;
@@ -25,6 +25,6 @@
     transform: translateY(0); /* Start from the top */
   }
   to {
-    transform: translateY(calc(10% + 600px)); /* Move to the bottom */
-  }
+    transform: translateY(-300px); /* Move to the bottom by the height of one image */
+    }
 }

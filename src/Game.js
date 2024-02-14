@@ -7,10 +7,10 @@ import enemy3 from "./enemy3.png";
 import enemy4 from "./enemy4.png";
 import enemy6 from "./enemy6.png";
 import enemy7 from "./enemy7.png";
-
 import bombSound from "./bomb.mp3"; // Import the sound file
 import Gunsound from "./gun.mp3"; // Import the sound file
 import explosionImg from "./explosion.png"; // Import explosion image
+import tntBomb from "./bomb.png"; // Import tnt bomb image
 
 const CANVAS_WIDTH = 480;
 const CANVAS_HEIGHT = 600;
@@ -20,9 +20,10 @@ const BULLET_SIZE = 5;
 const BULLET_SPEED = 5;
 const ENEMY_WIDTH = 70;
 const ENEMY_HEIGHT = 70;
-const ENEMY_SPEED = 1;
-const ENEMY_BULLET_SIZE = 5;
+const ENEMY_SPEED = 2;
 const ENEMY_BULLET_SPEED = 3;
+const TNT_WIDTH = 30;
+const TNT_HEIGHT = 30;
 
 const Player = ({ x, y }) => {
   return (
@@ -111,6 +112,37 @@ const Explosion = ({ x, y }) => {
   );
 };
 
+
+const SpecialPower = ({ x, y }) => {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: `${BULLET_SIZE}px`,
+        height: `${BULLET_SIZE}px`,
+        backgroundColor: "yellow",
+      }}
+    />
+  );
+};
+const TNTBomb = ({ x, y }) => {
+  return (
+    <img
+      src={tntBomb}
+      alt="TNT Bomb"
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: `${TNT_WIDTH}px`,
+        height: `${TNT_HEIGHT}px`,
+      }}
+    />
+  );
+};
+
 const GameOverPopover = ({ score, onRestart }) => {
   return (
     <div className="game-over-popover">
@@ -132,20 +164,17 @@ const Game = () => {
   const [ammo, setAmmo] = useState([]); // State for ammo
   const [ammoCount, setAmmoCount] = useState(10);
   const [gameOver, setGameOver] = useState(false);
+  const [tntBombs, setTNTBombs] = useState([]);
+  const [specialPowers, setSpecialPowers] = useState([]);
 
-  const handleAmmoCollection = (ammoIndex) => {
-    // Remove the collected ammo from the screen
-    setAmmo((prevAmmo) => prevAmmo.filter((_, index) => index !== ammoIndex));
-    // Increase the player's bullet count by 5
-    setAmmoCount((prevCount) => prevCount + 5);
-  };
   useEffect(() => {
     const explosionTimeout = setTimeout(() => {
       setExplosions([]);
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(explosionTimeout);
   }, [explosions]);
+
   useEffect(() => {
     const moveEnemies = () => {
       setEnemies((prevEnemies) =>
@@ -158,7 +187,7 @@ const Game = () => {
       );
     };
 
-    const enemyMoveInterval = setInterval(moveEnemies, 16); // Move enemies every 16ms (60 fps)
+    const enemyMoveInterval = setInterval(moveEnemies, 5); // Move enemies every 16ms (60 fps)
 
     return () => clearInterval(enemyMoveInterval);
   }, [enemies, enemyBullets]);
@@ -184,22 +213,21 @@ const Game = () => {
         }
       }
     };
-  
+
     const handleKeyPress = (e) => {
       if (e.key === " ") {
         e.preventDefault(); // Prevent scrolling when space is pressed
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keypress", handleKeyPress);
-  
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keypress", handleKeyPress);
     };
   }, [playerX, playerY, bullets, gameOver]);
-  
 
   useEffect(() => {
     const moveBullets = () => {
@@ -223,7 +251,10 @@ const Game = () => {
       );
     };
 
-    const enemyBulletInterval = setInterval(moveEnemyBullets, 16); // Move enemy bullets every 16ms (60 fps)
+    const enemyBulletInterval = setInterval(
+      moveEnemyBullets,
+      16
+    ); // Move enemy bullets every 16ms (60 fps)
 
     return () => clearInterval(enemyBulletInterval);
   }, [enemyBullets]);
@@ -244,27 +275,27 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
-    const moveEnemies = () => {
-      setEnemies((prevEnemies) =>
-        prevEnemies.map((enemy) => ({ ...enemy, y: enemy.y + ENEMY_SPEED }))
+    const moveTNTBombs = () => {
+      setTNTBombs((prevBombs) =>
+        prevBombs.map((bomb) => ({ ...bomb, y: bomb.y + 2 }))
       );
-
-      // Randomly let some enemies shoot bullets
-      enemies.forEach((enemy) => {
-        if (Math.random() < 0.02) {
-          const newEnemyBullet = {
-            x: enemy.x + ENEMY_WIDTH / 2 - ENEMY_BULLET_SIZE / 2,
-            y: enemy.y + ENEMY_HEIGHT,
-          };
-          setEnemyBullets([...enemyBullets, newEnemyBullet]);
-        }
-      });
     };
 
-    const enemyMoveInterval = setInterval(moveEnemies, 5); // Move enemies every 16ms (60 fps)
+    const tntBombInterval = setInterval(moveTNTBombs, 16); // Move TNT bombs every 16ms (60 fps)
 
-    return () => clearInterval(enemyMoveInterval);
-  }, [enemies, enemyBullets]);
+    return () => clearInterval(tntBombInterval);
+  }, [tntBombs]);
+
+  useEffect(() => {
+    const spawnTNTBomb = () => {
+      const x = Math.random() * (CANVAS_WIDTH - TNT_WIDTH);
+      setTNTBombs((prevBombs) => [...prevBombs, { x, y: -TNT_HEIGHT }]);
+    };
+
+    const tntSpawnInterval = setInterval(spawnTNTBomb, 5000); // Spawn TNT bombs every 5 seconds
+
+    return () => clearInterval(tntSpawnInterval);
+  }, []);
 
   useEffect(() => {
     // Check for collisions between bullets and enemies
@@ -302,7 +333,6 @@ const Game = () => {
     });
 
     // Check for collisions between player and enemies
-    // Check for collisions between player and enemies
     enemies.forEach((enemy) => {
       const playerLeft = playerX;
       const playerRight = playerX + PLAYER_WIDTH;
@@ -324,66 +354,81 @@ const Game = () => {
       }
     });
 
-    const explosionTimeout = setTimeout(() => {
-      setExplosions([]);
-    }, 500);
-
-    return () => clearTimeout(explosionTimeout);
-  }, [playerX, playerY, bullets, enemies]);
-
+    // Check for collisions between TNT bombs and bullets
+    tntBombs.forEach((bomb, bombIndex) => {
+      bullets.forEach((bullet, bulletIndex) => {
+        if (
+          bullet.x < bomb.x + TNT_WIDTH &&
+          bullet.x + BULLET_SIZE > bomb.x &&
+          bullet.y < bomb.y + TNT_HEIGHT &&
+          bullet.y + BULLET_SIZE > bomb.y
+        ) {
+          // Collision detected, remove bomb, bullets, and enemies
+          setTNTBombs((prevBombs) =>
+            prevBombs.filter((_, index) => index !== bombIndex)
+          );
+          setBullets([]);
+          setEnemies([]);
+          // Play the bomb sound effect
+          const audio = new Audio(bombSound);
+          audio.play();
+          // Increase score by 10
+          setScore((prevScore) => prevScore + 10);
+          // Add explosion for all enemies
+          const enemyExplosions = enemies.map((enemy) => ({
+            x: enemy.x,
+            y: enemy.y,
+          }));
+          setExplosions(enemyExplosions);
+          setTimeout(() => {
+            setExplosions([]);
+          }, 1000); // Remove explosion after 1 second
+        }
+      });
+    });
+  }, [playerX, playerY, bullets, enemies, tntBombs]);
 
   const handleRestart = () => {
     window.location.reload();
-
   };
-  
-  
-  useEffect(() => {
-    const moveEnemies = () => {
-      setEnemies((prevEnemies) =>
-        prevEnemies.map((enemy) => ({ ...enemy, y: enemy.y + ENEMY_SPEED }))
-      );
-  
-      // Check if any enemy has reached the bottom of the canvas
-      setEnemies((prevEnemies) =>
-        prevEnemies.filter((enemy) => enemy.y < CANVAS_HEIGHT)
-      );
-    };
-  
-    const enemyMoveInterval = setInterval(moveEnemies, 16); // Move enemies every 16ms (60 fps)
-  
-    return () => clearInterval(enemyMoveInterval);
-  }, [enemies, enemyBullets]);
-  
+
   return (
     <div className="App">
-    <div className="game-container">
-      <div className="cloud-background">
-      </div>
-      <Player x={playerX} y={playerY} />
-      {bullets.map((bullet, index) => (
-        <Bullet key={index} x={bullet.x} y={bullet.y} />
+  <div className="game-container">
+    {/* Add the cloud background */}
+    <div className="cloud-background"></div>
+    
+    {/* Render game elements */}
+    <Player x={playerX} y={playerY} />
+    {bullets.map((bullet, index) => (
+      <Bullet key={index} x={bullet.x} y={bullet.y} />
+    ))}
+    {enemies
+      .filter((enemy) => enemy.y < CANVAS_HEIGHT)
+      .map((enemy, index) => (
+        <Enemy key={index} x={enemy.x} y={enemy.y} type={enemy.type} />
       ))}
-      {enemies
-        .filter((enemy) => enemy.y < CANVAS_HEIGHT)
-        .map((enemy, index) => (
-          <Enemy key={index} x={enemy.x} y={enemy.y} type={enemy.type} />
-        ))}
-      {explosions.map((explosion, index) => (
-        <Explosion key={index} x={explosion.x} y={explosion.y} />
-      ))}
-    </div>
-    {gameOver && (
-          <>
-            <GameOverPopover score={score} onRestart={handleRestart} />
-            <div className="game-over-text">Game Over!</div>
-          </>
-        )}
-    <div className="score">Score: {score}</div>
-    <p>Game instructions use arrow keys "left" and "right" to move and press "spacebutton" to shoot! enjoy your game
-    </p>
-    <button onClick={handleRestart}>Restart game</button>
+    {tntBombs.map((bomb, index) => (
+      <TNTBomb key={index} x={bomb.x} y={bomb.y} />
+    ))}
+    {explosions.map((explosion, index) => (
+      <Explosion key={index} x={explosion.x} y={explosion.y} />
+    ))}
   </div>
+  {gameOver && (
+    <>
+      <GameOverPopover score={score} onRestart={handleRestart} />
+      <div className="game-over-text">Game Over!</div>
+    </>
+  )}
+  <div className="score">Score: {score}</div>
+  <p>
+    Game instructions: use arrow keys "left" and "right" to move and press
+    "space" to shoot! Enjoy your game!
+  </p>
+  <button onClick={handleRestart}>Restart game</button>
+</div>
+
   );
 };
 
